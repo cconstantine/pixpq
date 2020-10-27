@@ -1,0 +1,24 @@
+version: '3.7'
+services:
+  db:
+    image: postgres:11.5
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: not_that_secret
+      POSTGRES_USER: pixpq
+  dev:
+    build:
+      context: .
+    command: /bin/bash
+    volumes:
+      - .:/app
+    environment:
+      PGHOST: db
+      PGDATABASE: pixpq
+      PGUSER: pixpq
+      PGPASSWORD: not_that_secret
+    depends_on:
+      - db
+volumes:
+  postgres_data:
