@@ -7,7 +7,7 @@
 #include <sys/types.h>
 #include <sys/select.h>
 
-namespace pixpg {
+namespace pixpq {
 
   location::location(float x, float y, float z) : x(x), y(y), z(z) { }
 
@@ -146,7 +146,7 @@ COMMIT;
             float y = strtof(PQgetvalue(select_result, i, PQfnumber(select_result, "y")), NULL);
             float z = strtof(PQgetvalue(select_result, i, PQfnumber(select_result, "z")), NULL);
             
-            receive(notify->extra, pixpg::location(x, y, z));
+            receive(notify->extra, pixpq::location(x, y, z));
           }
 
         }

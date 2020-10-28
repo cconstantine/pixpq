@@ -3,7 +3,7 @@
 
 #include "libpq-fe.h"
 
-namespace pixpg {
+namespace pixpq {
 
   class location {
   public:
@@ -17,9 +17,9 @@ namespace pixpg {
     db();
 
     ~db();
-    void send(const std::string& name, const location& loc);
+    void send(const std::string& name, const pixpq::location& loc);
 
-    virtual void receive(const std::string& name, const pixpg::location& loc) = 0;
+    inline virtual void receive(const std::string& name, const pixpq::location& loc) {};
 
     void listen();
 
