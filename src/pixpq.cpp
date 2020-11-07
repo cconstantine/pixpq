@@ -98,7 +98,7 @@ EXECUTE PROCEDURE tracking_location_notifier('tracking_location_update');
     pqxx::work w(connection);
     pqxx::row r = w.exec1(std::string("SELECT x, y, z from tracking_locations where name = ") + w.quote(name) );
 
-    return pixpq::tracking::location(r["x"].as<float>(), r["z"].as<float>(), r["z"].as<float>());
+    return pixpq::tracking::location(r["x"].as<float>(), r["y"].as<float>(), r["z"].as<float>());
   }
 
   pqxx::connection& manager::get_notifier_connection() {
