@@ -1,31 +1,55 @@
-#include <pixpq/pixpq.hpp>
+#include <pixpq/pixpq.hh>
 
 #include <stdlib.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/types.h>
-#include <sys/select.h>
 
-namespace pixpq {
+namespace pixpq::tracking {
 
   location::location(float x, float y, float z) : x(x), y(y), z(z) { }
 
-  db::db() : conninfo(""), connection(NULL), listen_thread(&db::listen, this) {
-    connection = ensure_connection(connection);
+  notifier::notifier(manager* mgr, std::shared_ptr<listener> l) :
+   pqxx::notification_receiver(mgr->get_notifier_connection(), "tracking_location_update"),
+   active(true), mgr(mgr), l(l), listening_thread(&notifier::listen_method, this) {  }
 
-    if (PQstatus(connection) == CONNECTION_OK) {
-      PGresult   *res = PQexec(connection,
-R"SQL(
-BEGIN;
-CREATE TABLE IF NOT EXISTS tracking_locations 
+  notifier::~notifier() {
+    active = false;
+    listening_thread.join();
+  }
+  void notifier::operator() (const std::string& payload, int backend_pid) {
+    l->update(payload, mgr->get(payload));
+  }
+
+  void notifier::listen_method() {
+    while (active) {
+      mgr->get_notifier_connection().await_notification();
+    }
+  }
+
+  
+  manager::manager(const std::string& opts) : connection(opts) {
+    connection.set_variable("synchronous_commit", "off");
+  }
+
+  void manager::set_listener(std::shared_ptr<pixpq::tracking::listener> l) {
+    n = std::make_shared<notifier>(this, l);
+  }
+
+  void manager::ensure_schema() {
+    pqxx::work w(connection);
+
+    w.exec(R"SQL(
+CREATE TABLE IF NOT EXISTS tracking_locations
  (
    name      text not null primary key,
    x         real not null,
    y         real not null,
    z         real not null
  );
+ )SQL");
 
+    w.exec(R"SQL(
 CREATE OR REPLACE FUNCTION tracking_location_notifier ()
  returns trigger
  language plpgsql
@@ -39,149 +63,43 @@ begin
   RETURN NULL;
 end;
 $$;
+  )SQL");
 
+    w.exec(R"SQL(
 DROP TRIGGER IF EXISTS notify_tracking_locations ON tracking_locations;
+  )SQL");
 
+    w.exec(R"SQL(
 CREATE TRIGGER notify_tracking_locations AFTER INSERT OR UPDATE
 ON tracking_locations
 FOR EACH ROW
 EXECUTE PROCEDURE tracking_location_notifier('tracking_location_update');
-
-COMMIT;
-)SQL"
-
-);
-      if (PQresultStatus(res) != PGRES_COMMAND_OK)
-      {
-          fprintf(stderr, "Command failed: %s", PQerrorMessage(connection));
-      }
-
-    }
-  }
-
-  db::~db() {
-    PQfinish(connection);
-    listen_thread.join();
-  }
-
-  void db::send(const std::string& name, const location& loc) {
-    connection = ensure_connection(connection);
-    if (PQstatus(connection) == CONNECTION_OK) {
-      PGresult   *res;
-
-      const char *paramValues[4];
-      char paramValue[3][512];
-      
-      paramValues[0] = name.c_str();
-      snprintf(paramValue[0], sizeof(paramValue[1]), "%f", loc.x);
-      paramValues[1] = paramValue[0];
-      snprintf(paramValue[1], sizeof(paramValue[2]), "%f", loc.y);
-      paramValues[2] = paramValue[1];
-      snprintf(paramValue[2], sizeof(paramValue[3]), "%f", loc.z);
-      paramValues[3] = paramValue[2];
-
-
-      res = PQexecParams(connection, 
-        "INSERT into tracking_locations VALUES ($1, $2, $3, $4) ON CONFLICT (name) DO UPDATE SET x = EXCLUDED.x, y = EXCLUDED.y, z = EXCLUDED.z;",
-        4, NULL, paramValues, NULL, NULL, 0);   
-
-      if (PQresultStatus(res) != PGRES_COMMAND_OK)
-      {
-          fprintf(stderr, "INSERT command failed: %s", PQerrorMessage(connection));
-      }
-      PQclear(res);
-
-    }
+  )SQL");
+    w.commit();
   }
 
 
-  void db::listen() {
-    PGconn     *conn = NULL;
-    PGresult   *res = NULL;
-    PGnotify   *notify = NULL;
+  void manager::store(const std::string& name, const location& loc) {
+    pqxx::work w(connection);
 
-    conn = ensure_connection(conn);
-    res = PQexec(conn, "LISTEN tracking_location_update;");
-    if (PQresultStatus(res) != PGRES_COMMAND_OK)
-    {
-        fprintf(stderr, "LISTEN command failed: %s", PQerrorMessage(conn));
-    }
-    PQclear(res);
-
-
-    while (true)
-    {
-      int         sock;
-      fd_set      input_mask;
-
-      sock = PQsocket(conn);
-
-      if (sock < 0)
-        break;              /* shouldn't happen */
-
-      FD_ZERO(&input_mask);
-      FD_SET(sock, &input_mask);
-
-      if (select(sock + 1, &input_mask, NULL, NULL, NULL) < 0)
-      {
-        fprintf(stderr, "select() failed: %s\n", strerror(errno));
-        conn = ensure_connection(conn);
-      }
-
-      /* Now check for input */
-      PQconsumeInput(conn);
-      while ((notify = PQnotifies(conn)) != NULL)
-      {
-        const char *paramValues[1];
-        paramValues[0] = notify->extra;
-        
-        PGresult *select_result = PQexecParams(conn, "SELECT x, y, z from tracking_locations where name = $1", 1, NULL, paramValues, NULL, NULL, 0);   
-        if (PQresultStatus(select_result) != PGRES_TUPLES_OK)
-        {
-            fprintf(stderr, "SELECT command failed: %s", PQerrorMessage(conn));
-        } else {
-          int num_rows = PQntuples(select_result);
-          for(int i = 0;i < num_rows;i++) {
-            float x = strtof(PQgetvalue(select_result, i, PQfnumber(select_result, "x")), NULL);
-            float y = strtof(PQgetvalue(select_result, i, PQfnumber(select_result, "y")), NULL);
-            float z = strtof(PQgetvalue(select_result, i, PQfnumber(select_result, "z")), NULL);
-            
-            receive(notify->extra, pixpq::location(x, y, z));
-          }
-
-        }
-
-        PQfreemem(notify);
-        PQconsumeInput(conn);
-      }
-    }
-    PQfinish(conn);
+    w.exec(std::string("INSERT into tracking_locations (name, x, y, z) VALUES (") +
+      w.quote(name) +
+      ", " + w.quote(loc.x) +
+      ", " + w.quote(loc.y) +
+      ", " + w.quote(loc.z) + 
+      ") ON CONFLICT (name) DO UPDATE SET x = EXCLUDED.x, y = EXCLUDED.y, z = EXCLUDED.z");
+    w.commit();
   }
 
 
-  PGconn * db::ensure_connection(PGconn *conn) {
-    if (conn != NULL && PQstatus(conn) == CONNECTION_OK) {
-      return conn;
-    }
-    PQfinish(conn);
-    /* Make a connection to the database */
-    conn = PQconnectdb(conninfo.c_str());
+  pixpq::tracking::location manager::get(const std::string& name) {
+    pqxx::work w(connection);
+    pqxx::row r = w.exec1(std::string("SELECT x, y, z from tracking_locations where name = ") + w.quote(name) );
 
-    /* Check to see that the backend connection was successfully made */
-    if (PQstatus(conn) != CONNECTION_OK)
-    {
-        fprintf(stderr, "Connection to database failed: %s",
-                PQerrorMessage(conn));
-        return NULL;
-    }
-
-    PGresult   *res = PQexec(conn, "SET synchronous_commit TO OFF;");
-    if (PQresultStatus(res) != PGRES_COMMAND_OK)
-    {
-        fprintf(stderr, "Command failed: %s", PQerrorMessage(conn));
-    }
-    PQclear(res);
-    return conn;
+    return pixpq::tracking::location(r["x"].as<float>(), r["z"].as<float>(), r["z"].as<float>());
   }
-    
+
+  pqxx::connection& manager::get_notifier_connection() {
+    return notifier_connection;
+  }
 }

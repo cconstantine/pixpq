@@ -3,7 +3,7 @@ FROM debian:buster-slim
 #get deps
 RUN apt-get update && \
   DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-  vim git ca-certificates libssl-dev wget build-essential libpq-dev postgresql-client postgresql-server-dev-all
+  vim git ca-certificates libssl-dev wget build-essential libpqxx-dev postgresql-client
 
 # cmake
 RUN wget https://github.com/Kitware/CMake/releases/download/v3.18.4/cmake-3.18.4.tar.gz
