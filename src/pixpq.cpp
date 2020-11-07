@@ -23,7 +23,9 @@ namespace pixpq::tracking {
 
   void notifier::listen_method() {
     while (active) {
-      mgr->get_notifier_connection().await_notification();
+      try {
+        mgr->get_notifier_connection().await_notification();
+      } catch (const pqxx::broken_connection& e) { /* ignore broken connections */ }
     }
   }
 
