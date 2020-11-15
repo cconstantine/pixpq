@@ -1,12 +1,13 @@
 #pragma once
 #include <pqxx/pqxx>
 #include <thread>
-#include <pixpq/tracking/location.hh>
 
-namespace pixpq::tracking {
+#include <pixpq/sculpture/settings.hh>
+
+namespace pixpq::sculpture {
   class listener {
   public:
-    virtual void update(const std::string& name,const pixpq::tracking::location& loc) = 0;
+    virtual void update(const std::string& name,const pixpq::sculpture::settings& settings) = 0;
   };
 
   class manager;
@@ -32,10 +33,10 @@ namespace pixpq::tracking {
 
     void ensure_schema();
 
-    void set_listener(std::shared_ptr<pixpq::tracking::listener> l);
+    void set_listener(std::shared_ptr<pixpq::sculpture::listener> l);
 
-    void store(const std::string& name, const pixpq::tracking::location& loc);
-    pixpq::tracking::location get(const std::string& name);
+    void store(const std::string& name, const pixpq::sculpture::settings& loc);
+    pixpq::sculpture::settings get(const std::string& name);
 
     pqxx::connection& get_notifier_connection();
   private:
