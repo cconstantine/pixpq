@@ -2,20 +2,24 @@
 
 
 namespace pixpq::sculpture {
-
-  notifier::notifier(manager* mgr, std::shared_ptr<listener> l) :
-   pqxx::notification_receiver(mgr->get_notifier_connection(), "sculpture_settings_update"),
+  template<typename T>
+  notifier<T>::notifier(const std::string& channel, manager* mgr, std::shared_ptr<listener<T>> l) :
+   pqxx::notification_receiver(mgr->get_notifier_connection(), channel),
    active(true), mgr(mgr), l(l), listening_thread(&notifier::listen_method, this) {  }
 
-  notifier::~notifier() {
+  template<typename T>
+  notifier<T>::~notifier() {
     active = false;
     listening_thread.join();
   }
-  void notifier::operator() (const std::string& payload, int backend_pid) {
-    l->update(payload, mgr->get(payload));
+
+  template<typename T>
+  void notifier<T>::operator() (const std::string& payload, int backend_pid) {
+    l->update(payload, mgr->get<T>(payload));
   }
 
-  void notifier::listen_method() {
+  template<typename T>
+  void notifier<T>::listen_method() {
     while (active) {
       try {
         mgr->get_notifier_connection().await_notification();

@@ -11,7 +11,9 @@ public:
   std::chrono::time_point<std::chrono::high_resolution_clock> start_time;
 };
 
-class test_settings_listener : public pixpq::sculpture::listener {
+class test_settings_listener 
+: public pixpq::sculpture::listener<pixpq::sculpture::settings>,
+  public pixpq::sculpture::listener<pixpq::sculpture::pattern> {
 public:
   virtual void update(const std::string& name, const pixpq::sculpture::settings& s) {
     std::chrono::time_point<std::chrono::high_resolution_clock> now = std::chrono::high_resolution_clock::now();
@@ -19,6 +21,8 @@ public:
 
     printf("%3.2fms: %s (%s) %f, %f\n", time_duration.count() * 1000,   name.c_str(), s.active_pattern.c_str(), s.brightness, s.gamma);
   }
+  virtual void update(const std::string& name, const pixpq::sculpture::pattern& s) { }
+
   std::chrono::time_point<std::chrono::high_resolution_clock> start_time;
 };
 
@@ -44,11 +48,16 @@ main(int argc, char **argv)
     pixpq::sculpture::manager sculpture_manager("");
 
     sculpture_manager.ensure_schema();
-    sculpture_manager.set_listener(listener);
+    sculpture_manager.set_listener<pixpq::sculpture::settings>(listener);
+
+    try {
+      pixpq::sculpture::settings settings = sculpture_manager.get<pixpq::sculpture::settings>("foo");
+    } catch( const pqxx::unexpected_rows& e) {}
+    
     int i = 0;
     while(++i < 10) {
       listener->start_time = std::chrono::high_resolution_clock::now();
-      sculpture_manager.store("foo", pixpq::sculpture::settings("asldkfj", 2.0 + i, 3.0 + i));
+      sculpture_manager.store<pixpq::sculpture::settings>("foo", pixpq::sculpture::settings("asldkfj", 2.0 + i, 3.0 + i));
 
       std::this_thread::sleep_for(std::chrono::duration<float>(1.0 / 60.0));
     }  

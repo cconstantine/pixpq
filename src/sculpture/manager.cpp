@@ -4,14 +4,16 @@
 #include <string.h>
 
 #include <pixpq/sculpture/manager.hh>
+#include <pixpq/sculpture/settings.hh>
 
 namespace pixpq::sculpture {
   manager::manager(const std::string& opts) : connection(opts) {
     connection.set_variable("synchronous_commit", "off");
   }
 
-  void manager::set_listener(std::shared_ptr<pixpq::sculpture::listener> l) {
-    n = std::make_shared<notifier>(this, l);
+  template<>
+  void manager::set_listener(std::shared_ptr<listener<pixpq::sculpture::settings>> l) {
+    notifiers["sculpture_settings_update"] = std::make_shared<notifier<pixpq::sculpture::settings>>("sculpture_settings_update", this, l);
   }
 
   void manager::ensure_schema() {
@@ -56,6 +58,7 @@ EXECUTE PROCEDURE sculpture_settings_notifier('sculpture_settings_update');
     w.commit();
   }
 
+  template<>
   void manager::store(const std::string& name, const pixpq::sculpture::settings& s) {
     pqxx::work w(connection);
 
@@ -68,7 +71,8 @@ EXECUTE PROCEDURE sculpture_settings_notifier('sculpture_settings_update');
     w.commit();
   }
 
-  pixpq::sculpture::settings manager::get(const std::string& name) {
+  template<>
+  pixpq::sculpture::settings manager::get<pixpq::sculpture::settings>(const std::string& name) {
     pqxx::work w(connection);
     pqxx::row r = w.exec1(std::string("SELECT active_pattern, brightness, gamma from sculpture_settings where name = ") + w.quote(name) );
 

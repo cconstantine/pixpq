@@ -2,18 +2,39 @@
 #include <pqxx/pqxx>
 #include <thread>
 
-#include <pixpq/sculpture/settings.hh>
-
 namespace pixpq::sculpture {
+  template<typename T>
   class listener {
   public:
-    virtual void update(const std::string& name,const pixpq::sculpture::settings& settings) = 0;
+    virtual void update(const std::string& name,const T& t) = 0;
   };
 
-  class manager;
+  class manager {
+  public:
+    manager( const std::string& opts);
+
+    void ensure_schema();
+
+    template<typename T>
+    void set_listener(std::shared_ptr<listener<T>> l);
+
+    template<typename T>
+    void store(const std::string& name, const T& loc);
+    
+    template<typename T>
+    T get(const std::string& name);
+
+    pqxx::connection& get_notifier_connection();
+  private:
+    pqxx::connection connection;
+    std::map<std::string, std::shared_ptr<pqxx::notification_receiver>> notifiers;
+    pqxx::connection notifier_connection;
+  };
+
+  template<typename T>
   class notifier : public pqxx::notification_receiver {
   public:
-    notifier(manager* mgr, std::shared_ptr<listener> l);
+    notifier(const std::string& channel, manager* mgr, std::shared_ptr<listener<T>> l);
     ~notifier();
 
     void operator() (const std::string& payload, int backend_pid);
@@ -23,25 +44,7 @@ namespace pixpq::sculpture {
 
     void listen_method();
     manager* mgr;
-    std::shared_ptr<listener> l;
+    std::shared_ptr<listener<T>> l;
     std::thread listening_thread;
-  };
-
-  class manager {
-  public:
-    manager( const std::string& opts);
-
-    void ensure_schema();
-
-    void set_listener(std::shared_ptr<pixpq::sculpture::listener> l);
-
-    void store(const std::string& name, const pixpq::sculpture::settings& loc);
-    pixpq::sculpture::settings get(const std::string& name);
-
-    pqxx::connection& get_notifier_connection();
-  private:
-    pqxx::connection connection;
-    std::shared_ptr<notifier> n;
-    pqxx::connection notifier_connection;
   };
 }

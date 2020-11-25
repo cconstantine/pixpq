@@ -9,5 +9,7 @@
 #include <pixpq/tracking/location.hh>
 #include <pixpq/tracking/manager.hh>
 
-#include <pixpq/sculpture/settings.hh>
 #include <pixpq/sculpture/manager.hh>
+
+#include <pixpq/sculpture/settings.hh>
+#include <pixpq/sculpture/pattern.hh>
