@@ -11,8 +11,9 @@ set(PIXPQ_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/include" PARENT_SCOPE)
 set(PIXPQ_LIBRARY pixpq pthread pqxx PARENT_SCOPE)
 
 add_library(pixpq
- src/tracking/location.cpp src/tracking/manager.cpp src/tracking/notifier.cpp
- src/sculpture/settings.cpp src/sculpture/manager.cpp src/sculpture/notifier.cpp
+ src/manager.cpp
+ src/sculpture/settings.cpp src/sculpture/pattern.cpp
+ src/tracking/location.cpp
  )
 
 target_link_libraries(pixpq pthread pqxx)

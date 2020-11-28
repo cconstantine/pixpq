@@ -4,9 +4,9 @@
 namespace pixpq::sculpture {
   class pattern {
   public:
-    pattern(const std::string& code, bool enabled);
+    pattern(const std::string& glsl_code, bool enabled);
 
-    std::string code;
+    std::string glsl_code;
     bool enabled;
   };
 }

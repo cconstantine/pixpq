@@ -1,8 +1,9 @@
 #pragma once
 #include <pqxx/pqxx>
 #include <thread>
-
-namespace pixpq::sculpture {
+#include <mutex>
+#include <condition_variable>
+namespace pixpq {
   template<typename T>
   class listener {
   public:
@@ -12,6 +13,7 @@ namespace pixpq::sculpture {
   class manager {
   public:
     manager( const std::string& opts);
+    ~manager();
 
     void ensure_schema();
 
@@ -25,26 +27,22 @@ namespace pixpq::sculpture {
     T get(const std::string& name);
 
     pqxx::connection& get_notifier_connection();
+
+    void start_listening();
   private:
     pqxx::connection connection;
-    std::map<std::string, std::shared_ptr<pqxx::notification_receiver>> notifiers;
     pqxx::connection notifier_connection;
-  };
 
-  template<typename T>
-  class notifier : public pqxx::notification_receiver {
-  public:
-    notifier(const std::string& channel, manager* mgr, std::shared_ptr<listener<T>> l);
-    ~notifier();
+    std::mutex connection_mutex;
+    std::map<std::string, std::shared_ptr<pqxx::notification_receiver>> notifiers;
 
-    void operator() (const std::string& payload, int backend_pid);
+    std::condition_variable listen_latch;
+    std::mutex listen_mutex;
+    bool is_listening;
 
-  private:
     bool active;
-
     void listen_method();
-    manager* mgr;
-    std::shared_ptr<listener<T>> l;
     std::thread listening_thread;
   };
+
 }
