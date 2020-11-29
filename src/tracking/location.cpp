@@ -34,6 +34,22 @@ namespace pixpq {
   }
 
   template<>
+  std::map<std::string, pixpq::tracking::location> manager::get_all() {
+    std::map<std::string, pixpq::tracking::location> records;
+
+    std::lock_guard<std::mutex> m(connection_mutex);
+    pqxx::work w(connection);
+
+    for(pqxx::row r : w.exec(std::string("SELECT name, x, y, z from tracking_locations"))) {
+      records.insert(std::map< std::string, pixpq::tracking::location >::value_type(
+        r["name"].as<std::string>(),
+        pixpq::tracking::location(r["x"].as<float>(), r["y"].as<float>(), r["z"].as<float>())
+      ));
+    }
+    return records;
+  }
+
+  template<>
   void manager::set_listener(std::shared_ptr<listener<pixpq::tracking::location>> l) {
     std::lock_guard<std::mutex> m(connection_mutex);
     notifiers["tracking_location_update"] = std::make_shared<notifier<pixpq::tracking::location>>("tracking_location_update", this, l);

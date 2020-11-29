@@ -23,7 +23,6 @@ namespace pixpq {
     std::unique_lock<std::mutex> lk(listen_mutex);
     listen_latch.wait(lk);
 
-    fprintf(stderr, "active: %d\n", active);
     while (active) {
       try {
         notifier_connection.await_notification();
@@ -35,8 +34,12 @@ namespace pixpq {
     return notifier_connection;
   }
 
-  void manager::start_listening() {
+  void manager::process_updates_background() {
     listen_latch.notify_all();
+  }
+
+  void manager::process_updates() {
+    notifier_connection.get_notifs();
   }
 
   void manager::ensure_schema() {

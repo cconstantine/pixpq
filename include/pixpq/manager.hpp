@@ -26,9 +26,14 @@ namespace pixpq {
     template<typename T>
     T get(const std::string& name);
 
+    template<typename T>
+    std::map<std::string, T> get_all();
+
     pqxx::connection& get_notifier_connection();
 
-    void start_listening();
+    void process_updates_background();
+    void process_updates();
+
   private:
     pqxx::connection connection;
     pqxx::connection notifier_connection;

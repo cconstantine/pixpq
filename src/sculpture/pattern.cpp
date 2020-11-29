@@ -14,7 +14,7 @@ namespace pixpq {
 
     pqxx::work w(connection);
 
-    w.exec(std::string("INSERT into pattern (name, glsl_code, enabled) VALUES (") +
+    w.exec(std::string("INSERT into patterns (name, glsl_code, enabled) VALUES (") +
       w.quote(name) +
       ", " + w.quote(p.glsl_code) +
       ", " + w.quote(p.enabled) +
@@ -30,6 +30,22 @@ namespace pixpq {
     pqxx::row r = w.exec1(std::string("SELECT glsl_code, enabled from patterns where name = ") + w.quote(name) );
 
     return pixpq::sculpture::pattern(r["glsl_code"].as<std::string>(), r["enabled"].as<bool>());
+  }
+
+  template<>
+  std::map<std::string, pixpq::sculpture::pattern> manager::get_all() {
+    std::map<std::string, pixpq::sculpture::pattern> records;
+
+    std::lock_guard<std::mutex> m(connection_mutex);
+    pqxx::work w(connection);
+
+    for(pqxx::row r : w.exec(std::string("SELECT name, glsl_code, enabled from patterns"))) {
+      records.insert(std::map< std::string, pixpq::sculpture::pattern >::value_type(
+        r["name"].as<std::string>(),
+        pixpq::sculpture::pattern(r["glsl_code"].as<std::string>(), r["enabled"].as<bool>())
+      ));
+    }
+    return records;
   }
 
   template<>

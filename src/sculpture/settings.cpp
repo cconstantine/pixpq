@@ -33,6 +33,23 @@ namespace pixpq {
   }
 
   template<>
+  std::map<std::string, pixpq::sculpture::settings> manager::get_all() {
+    std::map<std::string, pixpq::sculpture::settings> records;
+
+    std::lock_guard<std::mutex> m(connection_mutex);
+    pqxx::work w(connection);
+
+    for(pqxx::row r : w.exec(std::string("SELECT name, active_pattern, brightness, gamma from sculpture_settings"))) {
+      records.insert(std::map< std::string, pixpq::sculpture::settings >::value_type(
+        r["name"].as<std::string>(),
+        pixpq::sculpture::settings(r["active_pattern"].as<std::string>(), r["brightness"].as<float>(), r["gamma"].as<float>())
+      ));
+    }
+    return records;
+  }
+
+
+  template<>
   void manager::set_listener(std::shared_ptr<listener<pixpq::sculpture::settings>> l) {
     notifiers["sculpture_settings_update"] = std::make_shared<notifier<pixpq::sculpture::settings>>("sculpture_settings_update", this, l);
   }
