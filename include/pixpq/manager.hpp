@@ -20,8 +20,8 @@ namespace pixpq {
     template<typename T>
     void set_listener(std::shared_ptr<listener<T>> l);
 
-    template<typename T>
-    void store(const std::string& name, const T& loc);
+    template<typename K, typename T>
+    void store(const K& name, const T& loc);
     
     template<typename T>
     T get(const std::string& name);

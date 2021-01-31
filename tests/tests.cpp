@@ -37,9 +37,9 @@ main(int argc, char **argv)
     int i = 0;
     while(i < 10) {
       fprintf(stderr, "store\n");
-      manager.store<pixpq::tracking::location>("foo", pixpq::tracking::location(++i, 2, 3));
-      manager.store<pixpq::sculpture::settings>("foo", pixpq::sculpture::settings("asldkfj", 2.0 + i, 3.0 + i));
-      manager.store<pixpq::sculpture::pattern>("foo.glsl", pixpq::sculpture::pattern(std::string("aldksfj: " + std::to_string(i)), i % 2 == 0));
+      manager.store<std::string, pixpq::tracking::location>("foo", pixpq::tracking::location(++i, 2, 3));
+      manager.store<std::string, pixpq::sculpture::settings>("foo", pixpq::sculpture::settings("asldkfj", 2.0 + i, 3.0 + i));
+      manager.store<std::string, pixpq::sculpture::pattern>("foo.glsl", pixpq::sculpture::pattern(std::string("aldksfj: " + std::to_string(i)), i % 2 == 0));
 
       std::this_thread::sleep_for(std::chrono::duration<float>(1.0 / 60.0));
       manager.process_updates();
