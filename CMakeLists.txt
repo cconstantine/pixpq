@@ -12,7 +12,7 @@ set(PIXPQ_LIBRARY pixpq pthread pqxx PARENT_SCOPE)
 
 add_library(pixpq
  src/manager.cpp
- src/sculpture/settings.cpp src/sculpture/pattern.cpp
+ src/sculpture/settings.cpp src/sculpture/pattern.cpp src/sculpture/fadecandy.cpp
  src/tracking/location.cpp
  )
 

@@ -9,7 +9,7 @@ namespace pixpq {
   }
 
   template<>
-  void manager::store(const std::string& name, const pixpq::sculpture::pattern& p) {
+  void manager::save(const std::string& name, const pixpq::sculpture::pattern& p) {
     std::lock_guard<std::mutex> m(connection_mutex);
 
     pqxx::work w(connection);
@@ -23,7 +23,7 @@ namespace pixpq {
   }
 
   template<>
-  pixpq::sculpture::pattern manager::get<pixpq::sculpture::pattern>(const std::string& name) {
+  pixpq::sculpture::pattern manager::get<std::string, pixpq::sculpture::pattern>(const std::string& name) {
     std::lock_guard<std::mutex> m(connection_mutex);
 
     pqxx::work w(connection);

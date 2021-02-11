@@ -9,7 +9,7 @@ namespace pixpq {
   }
 
   template<>
-  void manager::store(const std::string& name, const pixpq::tracking::location& loc) {
+  void manager::save(const std::string& name, const pixpq::tracking::location& loc) {
     std::lock_guard<std::mutex> m(connection_mutex);
 
     pqxx::work w(connection);

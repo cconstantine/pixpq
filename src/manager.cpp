@@ -7,35 +7,12 @@
 #include <pixpq/notifier.hpp>
 
 namespace pixpq {
-  manager::manager(const std::string& opts) : connection(opts), notifier_connection(opts), active(true), listening_thread(&manager::listen_method, this) {
+  manager::manager(const std::string& opts) : connection(opts), notifier_connection(opts) {
     connection.set_variable("synchronous_commit", "off");
-  }
-
-  manager::~manager() {
-    active = false;
-    listen_latch.notify_all();
-
-    notifier_connection.close();
-    listening_thread.join();
-  }
-
-  void manager::listen_method() {
-    std::unique_lock<std::mutex> lk(listen_mutex);
-    listen_latch.wait(lk);
-
-    while (active) {
-      try {
-        notifier_connection.await_notification();
-      } catch (const pqxx::broken_connection& e) { /* ignore broken connections */ }
-    }
   }
 
   pqxx::connection& manager::get_notifier_connection() {
     return notifier_connection;
-  }
-
-  void manager::process_updates_background() {
-    listen_latch.notify_all();
   }
 
   void manager::process_updates() {
@@ -160,6 +137,32 @@ FOR EACH ROW
 EXECUTE PROCEDURE patterns_notifier('patterns_update');
   )SQL");
     /************************************************/
+
+    /************** LEDs ************************/
+
+  w.exec(R"SQL(
+CREATE TABLE IF NOT EXISTS fadecandies
+ (
+   id               SERIAL PRIMARY KEY,
+   sculpture_name   text REFERENCES sculpture_settings(name),
+   address          text unique not null
+ );
+ )SQL");
+
+
+  w.exec(R"SQL(
+CREATE TABLE IF NOT EXISTS leds
+ (
+   fadecandy_id     integer REFERENCES fadecandies(id) NOT NULL,
+   idx              integer NOT NULL,
+   x                real NOT NULL,
+   y                real NOT NULL,
+   z                real NOT NULL,
+
+   PRIMARY KEY (fadecandy_id, idx)
+ );
+ )SQL");
+
 
     w.commit();
   }

@@ -24,7 +24,7 @@ main(int argc, char **argv)
 {
   pixpq::manager manager("");
   manager.ensure_schema();
-
+/*
   std::shared_ptr<test_tracking_listener> ttl = std::make_shared<test_tracking_listener>();
   manager.set_listener<pixpq::tracking::location>(ttl);
 
@@ -32,11 +32,11 @@ main(int argc, char **argv)
   manager.set_listener<pixpq::sculpture::settings>(tsl);
   manager.set_listener<pixpq::sculpture::pattern>(tsl);
 
-  fprintf(stderr, "start loop: %p\n", std::this_thread::get_id());
+  printf(stderr, "start loop: %p\n", std::this_thread::get_id());
   {
     int i = 0;
     while(i < 10) {
-      fprintf(stderr, "store\n");
+      printf(stderr, "store\n");
       manager.store<std::string, pixpq::tracking::location>("foo", pixpq::tracking::location(++i, 2, 3));
       manager.store<std::string, pixpq::sculpture::settings>("foo", pixpq::sculpture::settings("asldkfj", 2.0 + i, 3.0 + i));
       manager.store<std::string, pixpq::sculpture::pattern>("foo.glsl", pixpq::sculpture::pattern(std::string("aldksfj: " + std::to_string(i)), i % 2 == 0));
@@ -46,19 +46,32 @@ main(int argc, char **argv)
     }  
   }
 
-  for (auto iter : manager.get_all<pixpq::tracking::location>()) {
+  for (auto iter : manager.get_all<std::string, pixpq::tracking::location>()) {
     printf("location: %s: %f, %f, %f\n", iter.first.c_str(), iter.second.x, iter.second.y, iter.second.z);
   }
 
-  for (auto iter : manager.get_all<pixpq::sculpture::settings>()) {
+  for (auto iter : manager.get_all<std::string, pixpq::sculpture::settings>()) {
     printf("settings: %s: %s, %f, %f\n", iter.first.c_str(), iter.second.active_pattern.c_str(), iter.second.brightness, iter.second.gamma);
   }
 
-  for (auto iter : manager.get_all<pixpq::sculpture::pattern>()) {
+  for (auto iter : manager.get_all<std::string, pixpq::sculpture::pattern>()) {
     printf("pattern:\n%s: %s, %d\n", iter.first.c_str(), iter.second.glsl_code.c_str(), iter.second.enabled);
   }
+*/
+  // pixpq::sculpture::settings s("cool_pattern.glsl", 1, 1);
+  // manager.store<void, pixpq::sculpture::settings>("thingy", s);
 
-  fprintf(stderr, "Done.\n");
+  // pixpq::sculpture::fadecandy fc("place.local");
+
+  // // std::map<std::string, std::vector<pixpq::sculpture::fadecandy>> fcs = manager.get_all<std::string, pixpq::sculpture::fadecandy>();
+
+  // printf("fc.id: %d\n", fc.id);
+  // fc.id = manager.store<int, pixpq::sculpture::fadecandy>("thingy2", fc);
+  // printf("fc.id: %d\n", fc.id);
+
+
+
+  printf("Done.\n");
 
   return 0;
 }

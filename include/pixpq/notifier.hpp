@@ -21,12 +21,11 @@ namespace pixpq {
    mgr(mgr), l(l) {  }
 
   template<typename T>
-  notifier<T>::~notifier() {
-  }
+  notifier<T>::~notifier() { }
 
   template<typename T>
   void notifier<T>::operator() (const std::string& payload, int backend_pid) {
-    l->update(payload, mgr->get<T>(payload));
+    l->update(payload, mgr->get<std::string, T>(payload));
   }
 
 }
