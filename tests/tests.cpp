@@ -24,40 +24,52 @@ main(int argc, char **argv)
 {
   pixpq::manager manager("");
   manager.ensure_schema();
-/*
+
   std::shared_ptr<test_tracking_listener> ttl = std::make_shared<test_tracking_listener>();
   manager.set_listener<pixpq::tracking::location>(ttl);
 
-  std::shared_ptr<test_settings_listener> tsl = std::make_shared<test_settings_listener>();
-  manager.set_listener<pixpq::sculpture::settings>(tsl);
-  manager.set_listener<pixpq::sculpture::pattern>(tsl);
+  // std::shared_ptr<test_settings_listener> tsl = std::make_shared<test_settings_listener>();
+  // manager.set_listener<pixpq::sculpture::settings>(tsl);
+  // manager.set_listener<pixpq::sculpture::pattern>(tsl);
 
-  printf(stderr, "start loop: %p\n", std::this_thread::get_id());
+  printf("start loop: %p\n", std::this_thread::get_id());
+  pixpq::tracking::location l("foo", 1, 2, 3);
+  manager.save(l);
+
+  pixpq::query q("foo");
+
+  q.exec<int>([&](const std::string& q, auto ... n) -> int { printf("foo\n");return 1;});
   {
-    int i = 0;
-    while(i < 10) {
-      printf(stderr, "store\n");
-      manager.store<std::string, pixpq::tracking::location>("foo", pixpq::tracking::location(++i, 2, 3));
-      manager.store<std::string, pixpq::sculpture::settings>("foo", pixpq::sculpture::settings("asldkfj", 2.0 + i, 3.0 + i));
-      manager.store<std::string, pixpq::sculpture::pattern>("foo.glsl", pixpq::sculpture::pattern(std::string("aldksfj: " + std::to_string(i)), i % 2 == 0));
+  pixpq::tracking::location l = manager.get<pixpq::tracking::location>(pixpq::query("fo2o"));
 
-      std::this_thread::sleep_for(std::chrono::duration<float>(1.0 / 60.0));
-      manager.process_updates();
-    }  
   }
 
-  for (auto iter : manager.get_all<std::string, pixpq::tracking::location>()) {
-    printf("location: %s: %f, %f, %f\n", iter.first.c_str(), iter.second.x, iter.second.y, iter.second.z);
-  }
+  // {
+  //   int i = 0;
+  //   while(i < 10) {      
+  //     // pixpq::tracking::location l = manager.get<pixpq::tracking::location>(pixpq::query("foo"));
+  //     // l.x = ++i;
+  //     // manager.save(l);
+  //     // // manager.store<std::string, pixpq::sculpture::settings>("foo", pixpq::sculpture::settings("asldkfj", 2.0 + i, 3.0 + i));
+  //     // manager.store<std::string, pixpq::sculpture::pattern>("foo.glsl", pixpq::sculpture::pattern(std::string("aldksfj: " + std::to_string(i)), i % 2 == 0));
 
-  for (auto iter : manager.get_all<std::string, pixpq::sculpture::settings>()) {
-    printf("settings: %s: %s, %f, %f\n", iter.first.c_str(), iter.second.active_pattern.c_str(), iter.second.brightness, iter.second.gamma);
-  }
+  //     std::this_thread::sleep_for(std::chrono::duration<float>(1.0 / 60.0));
+  //     manager.process_updates();
+  //   }  
+  // }
 
-  for (auto iter : manager.get_all<std::string, pixpq::sculpture::pattern>()) {
-    printf("pattern:\n%s: %s, %d\n", iter.first.c_str(), iter.second.glsl_code.c_str(), iter.second.enabled);
-  }
-*/
+  // for (auto iter : manager.get_all<std::string, pixpq::tracking::location>()) {
+  //   printf("location: %s: %f, %f, %f\n", iter.first.c_str(), iter.second.x, iter.second.y, iter.second.z);
+  // }
+
+  // for (auto iter : manager.get_all<std::string, pixpq::sculpture::settings>()) {
+  //   printf("settings: %s: %s, %f, %f\n", iter.first.c_str(), iter.second.active_pattern.c_str(), iter.second.brightness, iter.second.gamma);
+  // }
+
+  // for (auto iter : manager.get_all<std::string, pixpq::sculpture::pattern>()) {
+  //   printf("pattern:\n%s: %s, %d\n", iter.first.c_str(), iter.second.glsl_code.c_str(), iter.second.enabled);
+  // }
+
   // pixpq::sculpture::settings s("cool_pattern.glsl", 1, 1);
   // manager.store<void, pixpq::sculpture::settings>("thingy", s);
 

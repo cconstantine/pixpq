@@ -8,19 +8,19 @@ namespace pixpq {
     pattern::pattern(const std::string& glsl_code, bool enabled) : glsl_code(glsl_code), enabled(enabled) {}
   }
 
-  template<>
-  void manager::save(const std::string& name, const pixpq::sculpture::pattern& p) {
-    std::lock_guard<std::mutex> m(connection_mutex);
+  // template<>
+  // void manager::save(const std::string& name, const pixpq::sculpture::pattern& p) {
+  //   std::lock_guard<std::mutex> m(connection_mutex);
 
-    pqxx::work w(connection);
+  //   pqxx::work w(connection);
 
-    w.exec(std::string("INSERT into patterns (name, glsl_code, enabled) VALUES (") +
-      w.quote(name) +
-      ", " + w.quote(p.glsl_code) +
-      ", " + w.quote(p.enabled) +
-      ") ON CONFLICT (name) DO UPDATE SET glsl_code = EXCLUDED.glsl_code, enabled = EXCLUDED.enabled");
-    w.commit();
-  }
+  //   w.exec(std::string("INSERT into patterns (name, glsl_code, enabled) VALUES (") +
+  //     w.quote(name) +
+  //     ", " + w.quote(p.glsl_code) +
+  //     ", " + w.quote(p.enabled) +
+  //     ") ON CONFLICT (name) DO UPDATE SET glsl_code = EXCLUDED.glsl_code, enabled = EXCLUDED.enabled");
+  //   w.commit();
+  // }
 
   template<>
   pixpq::sculpture::pattern manager::get<std::string, pixpq::sculpture::pattern>(const std::string& name) {

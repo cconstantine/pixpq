@@ -3,6 +3,10 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+
+#include <pixpq/record.hpp>
+#include <pixpq/query.hpp>
+
 namespace pixpq {
   template<typename T>
   class listener {
@@ -19,11 +23,20 @@ namespace pixpq {
     template<typename T>
     void set_listener(std::shared_ptr<listener<T>> l);
 
-    template<typename K, typename T>
-    K save(const T& obj);
+    void save(pixpq::record& obj);
 
-    template<typename K, typename T>
-    void save(const K& id, const T& obj);
+    template<typename T>
+    T get(const pixpq::query& q) {
+      pqxx::work w(connection);
+      return T(
+        q.exec<pqxx::row>(
+          [&](const std::string& q, auto... params) -> pqxx::row { return w.exec_params1(q, params...); }
+        )
+      );
+    }
+
+    // template<typename K, typename T>
+    // void save(const K& id, const T& obj);
     
     template<typename K, typename T>
     T get(const K& id);

@@ -10,25 +10,25 @@ namespace pixpq {
     // led::led(float x, float y, float z) : x(x), y(y), z(z) { }
   }
 
-  template<>
-  int manager::save(const pixpq::sculpture::fadecandy& fc) {
-    int id = fc.id;
-    std::lock_guard<std::mutex> m(connection_mutex);
-    pqxx::work w(connection);
+  // template<>
+  // int manager::save( pixpq::sculpture::fadecandy& fc) {
+  //   int id = fc.id;
+  //   std::lock_guard<std::mutex> m(connection_mutex);
+  //   pqxx::work w(connection);
 
-    return w.exec1(std::string("INSERT into fadecandies (sculpture_name, address) VALUES (") +
-       w.quote(fc.sculpture_name) + ", " + w.quote(fc.address) +
-      ") RETURNING id")["id"].as<int>();
-  }
+  //   return w.exec1(std::string("INSERT into fadecandies (sculpture_name, address) VALUES (") +
+  //      w.quote(fc.sculpture_name) + ", " + w.quote(fc.address) +
+  //     ") RETURNING id")["id"].as<int>();
+  // }
 
-  template<>
-  void manager::save(const int& id, const pixpq::sculpture::fadecandy& fc) {
-    std::lock_guard<std::mutex> m(connection_mutex);
-    pqxx::work w(connection);
-    w.exec(std::string("UPDATE fadecandies SET (sculpture_name, address) = (") +
-       w.quote(fc.sculpture_name) + ", " + w.quote(fc.address) +
-       ") WHERE id = " + w.quote(fc.id));
-  }
+  // template<>
+  // void manager::save(const int& id, const pixpq::sculpture::fadecandy& fc) {
+  //   std::lock_guard<std::mutex> m(connection_mutex);
+  //   pqxx::work w(connection);
+  //   w.exec(std::string("UPDATE fadecandies SET (sculpture_name, address) = (") +
+  //      w.quote(fc.sculpture_name) + ", " + w.quote(fc.address) +
+  //      ") WHERE id = " + w.quote(fc.id));
+  // }
 
   //   w.exec(std::string("DELETE FROM leds where fadecandy_id = " + w.quote(fc.id) + " AND idx >= " + w.quote(fc.leds.size())));
 

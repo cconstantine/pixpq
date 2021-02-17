@@ -16,8 +16,8 @@ namespace pixpq {
     { }
   }
 
-  template<>
-  void manager::save(const pixpq::sculpture::settings& s) {
+  // template<>
+  // void manager::save(const pixpq::sculpture::settings& s) {
     // std::lock_guard<std::mutex> m(connection_mutex);
     // pqxx::work w(connection);
 
@@ -28,7 +28,7 @@ namespace pixpq {
     //   ", " + w.quote(s.gamma) +
     //   ") ON CONFLICT (name) DO UPDATE SET active_pattern = EXCLUDED.active_pattern, brightness = EXCLUDED.brightness, gamma = EXCLUDED.gamma");
     // w.commit();
-  }
+  // }
 
   template<>
   pixpq::sculpture::settings manager::get<std::string, pixpq::sculpture::settings>(const std::string& name) {
