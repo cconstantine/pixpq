@@ -5,76 +5,42 @@
 
 namespace pixpq {
   namespace sculpture {
-    // fadecandy::fadecandy(const std::string& address) : id(-1), address(address) { }
-    // fadecandy::fadecandy(int id, const std::string& address) : id(id), address(address) { }
-    // led::led(float x, float y, float z) : x(x), y(y), z(z) { }
-  }
+    int id;
+    std::string sculpture_name;
+    std::string address;
 
-  // template<>
-  // int manager::save( pixpq::sculpture::fadecandy& fc) {
-  //   int id = fc.id;
-  //   std::lock_guard<std::mutex> m(connection_mutex);
-  //   pqxx::work w(connection);
+    fadecandy::fadecandy(const pixpq::sculpture::settings& s, const std::string& address) :
+     id(-1), sculpture_name(s.name), address(address)
+    { }
 
-  //   return w.exec1(std::string("INSERT into fadecandies (sculpture_name, address) VALUES (") +
-  //      w.quote(fc.sculpture_name) + ", " + w.quote(fc.address) +
-  //     ") RETURNING id")["id"].as<int>();
-  // }
+    fadecandy::fadecandy(const pqxx::row& row) : 
+     id(row["id"].as<int>()), sculpture_name(row["sculpture_name"].as<std::string>()), address(row["address"].as<std::string>())
+    { } 
 
-  // template<>
-  // void manager::save(const int& id, const pixpq::sculpture::fadecandy& fc) {
-  //   std::lock_guard<std::mutex> m(connection_mutex);
-  //   pqxx::work w(connection);
-  //   w.exec(std::string("UPDATE fadecandies SET (sculpture_name, address) = (") +
-  //      w.quote(fc.sculpture_name) + ", " + w.quote(fc.address) +
-  //      ") WHERE id = " + w.quote(fc.id));
-  // }
-
-  //   w.exec(std::string("DELETE FROM leds where fadecandy_id = " + w.quote(fc.id) + " AND idx >= " + w.quote(fc.leds.size())));
-
-  //   for(size_t i = 0;i < fc.leds.size();i++) {
-  //     w.exec(std::string("INSERT into leds (fadecandy_id, idx, x, y, z) VALUES (") + 
-  //       w.quote(fc.id) + 
-  //       ", " + w.quote(i) +
-  //       ", " + w.quote(fc.leds[i].x) + ", " + w.quote(fc.leds[i].y) + ", " + w.quote(fc.leds[i].z) +
-  //       ") ON CONFLICT (fadecandy_id, idx) DO UPDATE SET x = EXCLUDED.x, y = EXCLUDED.y, z = EXCLUDED.z");
-  //   }
-
-  //   w.commit();
-  //   return id;
-  // }
-
-  template<>
-  pixpq::sculpture::fadecandy manager::get<int, pixpq::sculpture::fadecandy>(const int& id) {
-    std::lock_guard<std::mutex> m(connection_mutex);
-
-    pqxx::work w(connection);
-    pqxx::row r = w.exec1(std::string("SELECT address from fadecandies where id = ") + w.quote(id) );
-    return pixpq::sculpture::fadecandy(r);
-  }
-
-  // template<>
-  // std::vector<pixpq::sculpture::fadecandy> manager::get<std::vector<pixpq::sculpture::fadecandy>>(const pixpq::sculpture::settings& s) {
-  //   std::lock_guard<std::mutex> m(connection_mutex);
-
-  //   pqxx::work w(connection);
-  //   pqxx::row r = w.exec1(std::string("SELECT active_pattern, brightness, gamma from sculpture_settings where name = ") + w.quote(name) );
-
-  //   return pixpq::sculpture::settings(r["active_pattern"].as<std::string>(), r["brightness"].as<float>(), r["gamma"].as<float>());
-  // }
-
-  template<>
-  std::map<std::string, std::vector<pixpq::sculpture::fadecandy>> manager::get_all() {
-    std::map<std::string, std::vector<pixpq::sculpture::fadecandy>> records;
-
-    std::lock_guard<std::mutex> m(connection_mutex);
-    pqxx::work w(connection);
-
-    for(pqxx::row r : w.exec(std::string("SELECT id, address, sculpture_name from sculpture_settings"))) {
-      records[r["sculpture_name"].as<std::string>()].push_back(pixpq::sculpture::fadecandy(r));
+    query<std::string> fadecandy::by_sculpture(const pixpq::sculpture::settings& s) {
+      return [=](querier<std::string> f) -> pqxx::result {
+        return f("SELECT id, sculpture_name, address FROM fadecandies WHERE sculpture_name = $1", s.name);
+      };
     }
-    return records;
+
+    query<std::string, std::string, int> fadecandy::update(const fadecandy& fc) {
+      return [=](querier<std::string, std::string, int> f) -> pqxx::result {
+        return f("UPDATE fadecandies \
+                  SET sculpture_name = $1, address = $2 \
+                  WHERE id = $3 \
+                  RETURNING id, sculpture_name, address",
+                 fc.sculpture_name, fc.address, fc.id);
+      };
+    }
+
+    query<std::string, std::string> fadecandy::insert(const fadecandy& fc) {
+      return [=](querier<std::string, std::string> f) -> pqxx::result {
+        return f("INSERT INTO fadecandies(sculpture_name, address) \
+                  VALUES($1, $2) \
+                  RETURNING id, sculpture_name, address",
+                 fc.sculpture_name, fc.address);
+      };
+    }
+
   }
-
-
 }

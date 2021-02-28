@@ -1,6 +1,3 @@
-#include <pixpq/manager.hpp>
-#include <pixpq/notifier.hpp>
-
 #include <pixpq/tracking/location.hpp>
 
 namespace pixpq::tracking {
@@ -12,64 +9,29 @@ namespace pixpq::tracking {
    z(r["z"].as<float>())
   { }
 
-  void location::save(pqxx::connection& connection) {
-    pqxx::work w(connection);
 
-    w.exec(std::string("INSERT into tracking_locations (name, x, y, z) VALUES (") +
-      w.quote(name) +
-      ", " + w.quote(x) +
-      ", " + w.quote(y) +
-      ", " + w.quote(z) + 
-      ") ON CONFLICT (name) DO UPDATE SET x = EXCLUDED.x, y = EXCLUDED.y, z = EXCLUDED.z");
-    w.commit();
+  std::string location::notify_channel() {
+    return "tracking_location_update";
   }
 
-}
-namespace pixpq {
-  // template<>
-  // void manager::save(const std::string& name, const pixpq::tracking::location& loc) {
-  //   std::lock_guard<std::mutex> m(connection_mutex);
-
-  //   pqxx::work w(connection);
-
-  //   w.exec(std::string("INSERT into tracking_locations (name, x, y, z) VALUES (") +
-  //     w.quote(name) +
-  //     ", " + w.quote(loc.x) +
-  //     ", " + w.quote(loc.y) +
-  //     ", " + w.quote(loc.z) + 
-  //     ") ON CONFLICT (name) DO UPDATE SET x = EXCLUDED.x, y = EXCLUDED.y, z = EXCLUDED.z");
-  //   w.commit();
-  // }
-
-  template<>
-  pixpq::tracking::location manager::get(const std::string& name) {
-    std::lock_guard<std::mutex> m(connection_mutex);
-
-    pqxx::work w(connection);
-    pqxx::row r = w.exec1(std::string("SELECT name, x, y, z from tracking_locations where name = ") + w.quote(name) );
-
-    return pixpq::tracking::location(r["name"].as<std::string>(), r["x"].as<float>(), r["y"].as<float>(), r["z"].as<float>());
+  query<std::string> location::by_id(const std::string& name) {
+    return by_name(name);
   }
 
-  template<>
-  std::map<std::string, pixpq::tracking::location> manager::get_all() {
-    std::map<std::string, pixpq::tracking::location> records;
-
-    std::lock_guard<std::mutex> m(connection_mutex);
-    pqxx::work w(connection);
-
-    for(pqxx::row r : w.exec(std::string("SELECT name, x, y, z from tracking_locations"))) {
-      records.insert(std::map< std::string, pixpq::tracking::location >::value_type(
-        r["name"].as<std::string>(),
-        pixpq::tracking::location(r["name"].as<std::string>(), r["x"].as<float>(), r["y"].as<float>(), r["z"].as<float>())
-      ));
-    }
-    return records;
+  query<std::string> location::by_name(const std::string& name)  {
+    return [=](querier<std::string> f) -> pqxx::result {
+      return f("select name, x, y, z from tracking_locations where name = $1", name);
+    };
   }
 
-  template<>
-  void manager::set_listener(std::shared_ptr<listener<pixpq::tracking::location>> l) {
-    std::lock_guard<std::mutex> m(connection_mutex);
-    notifiers["tracking_location_update"] = std::make_shared<notifier<pixpq::tracking::location>>("tracking_location_update", this, l);
+  query<std::string, float, float, float> location::upsert(const location& l)  {
+    return [=](querier<std::string, float, float, float> f) -> pqxx::result {
+      return f(
+        "INSERT INTO tracking_locations(name, x, y, z) \
+         VALUES ($1, $2, $3, $4) \
+         ON CONFLICT (name) DO UPDATE set x = EXCLUDED.x, y = EXCLUDED.y, z = EXCLUDED.z \
+         RETURNING name, x, y, z",
+        l.name, l.x, l.y, l.z);
+    };
   }
 }

@@ -3,7 +3,7 @@
 class test_tracking_listener : public pixpq::listener<pixpq::tracking::location> {
 public:
   virtual void update(const std::string& name, const pixpq::tracking::location& loc) {
-    printf("%s at %f, %f, %f\n", name.c_str(), loc.x, loc.y, loc.z);
+    printf("update: %s at %f, %f, %f\n", name.c_str(), loc.x, loc.y, loc.z);
   }
 };
 
@@ -12,10 +12,10 @@ class test_settings_listener
   public pixpq::listener<pixpq::sculpture::pattern> {
 public:
   virtual void update(const std::string& name, const pixpq::sculpture::settings& s) {
-    printf("%s (%s) %f, %f\n", name.c_str(), s.active_pattern.c_str(), s.brightness, s.gamma);
+    printf("update: %s (%s) %f, %f\n", name.c_str(), s.active_pattern.c_str(), s.brightness, s.gamma);
   }
   virtual void update(const std::string& name, const pixpq::sculpture::pattern& p) {
-    printf("%s (%d):\n'%s'\n", name.c_str(), p.enabled, p.glsl_code.c_str());
+    printf("update: %s (%d):\n'%s'\n", name.c_str(), p.enabled, p.glsl_code.c_str());
   }
 };
 
@@ -32,16 +32,20 @@ main(int argc, char **argv)
   // manager.set_listener<pixpq::sculpture::settings>(tsl);
   // manager.set_listener<pixpq::sculpture::pattern>(tsl);
 
-  printf("start loop: %p\n", std::this_thread::get_id());
-  pixpq::tracking::location l("foo", 1, 2, 3);
-  manager.save(l);
+  pixpq::tracking::location l = manager.get<pixpq::tracking::location>(pixpq::tracking::location::by_name("foo"));
+  printf("%s: %f, %f, %f\n", l.name.c_str(), l.x, l.y, l.z);
+  l.x++;
+  l = manager.get<pixpq::tracking::location>(pixpq::tracking::location::upsert(l));
+  printf("%s: %f, %f, %f\n", l.name.c_str(), l.x, l.y, l.z);
+  // manager.save(l);
+  manager.process_updates();
+  printf("count: %d\n", manager.get_all<pixpq::tracking::location>(pixpq::tracking::location::by_name("foo")).size());
+  // pixpq::query q("foo");
 
-  pixpq::query q("foo");
-
-  q.exec<int>([&](const std::string& q, auto ... n) -> int { printf("foo\n");return 1;});
   {
-  pixpq::tracking::location l = manager.get<pixpq::tracking::location>(pixpq::query("fo2o"));
-
+    // pixpq::tracking::location l = manager.get<pixpq::tracking::location>(pixpq::query("foo"));
+    // std::vector<pixpq::tracking::location> locations = manager.get_all<pixpq::tracking::location>(pixpq::query("foo"));
+    // manager.get<void>(pixpq::query("foo"));
   }
 
   // {

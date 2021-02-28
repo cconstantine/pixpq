@@ -1,19 +1,22 @@
 #pragma once
 #include <string>
 
-#include <pixpq/record.hpp>
+#include <pixpq/manager.hpp>
 
 namespace pixpq::tracking {
 
-  class location : public pixpq::record {
+  class location {
   public:
     location(const pqxx::row& r);
     location(const std::string& name, float x, float y, float z);
 
-    virtual void save(pqxx::connection& c);
-
     std::string name;
     float x, y, z;
 
+    static std::string notify_channel();
+    static query<std::string> by_id(const std::string& name);
+
+    static query<std::string> by_name(const std::string& name);
+    static query<std::string, float, float, float> upsert(const location& l);
   };
 }

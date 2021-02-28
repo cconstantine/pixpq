@@ -5,15 +5,9 @@
 
 #include <pixpq/manager.hpp>
 
-#include <pixpq/notifier.hpp>
-
 namespace pixpq {
   manager::manager(const std::string& opts) : connection(opts), notifier_connection(opts) {
     connection.set_variable("synchronous_commit", "off");
-  }
-
-  void manager::save(pixpq::record& r) {
-    r.save(connection);
   }
 
   pqxx::connection& manager::get_notifier_connection() {
