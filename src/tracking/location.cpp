@@ -9,29 +9,33 @@ namespace pixpq::tracking {
    z(r["z"].as<float>())
   { }
 
-
   std::string location::notify_channel() {
     return "tracking_location_update";
   }
 
-  query<std::string> location::by_id(const std::string& name) {
+  query location::by_id(const std::string& name) {
     return by_name(name);
   }
 
-  query<std::string> location::by_name(const std::string& name)  {
-    return [=](querier<std::string> f) -> pqxx::result {
-      return f("select name, x, y, z from tracking_locations where name = $1", name);
+  query location::by_name(const std::string& name)  {
+    return [=](pqxx::connection& c) -> pqxx::result {
+      pqxx::work w(c);
+
+      return w.exec_params_n(1,"select name, x, y, z from tracking_locations where name = $1", name);      
     };
   }
 
-  query<std::string, float, float, float> location::upsert(const location& l)  {
-    return [=](querier<std::string, float, float, float> f) -> pqxx::result {
-      return f(
+  query location::upsert(const location& l)  {
+    return [=](pqxx::connection& c) -> pqxx::result {
+      pqxx::work w(c);
+      pqxx::result r = w.exec_params_n(1,
         "INSERT INTO tracking_locations(name, x, y, z) \
          VALUES ($1, $2, $3, $4) \
          ON CONFLICT (name) DO UPDATE set x = EXCLUDED.x, y = EXCLUDED.y, z = EXCLUDED.z \
          RETURNING name, x, y, z",
         l.name, l.x, l.y, l.z);
+      w.commit();
+      return r;
     };
   }
 }

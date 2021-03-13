@@ -14,9 +14,9 @@ namespace pixpq::tracking {
     float x, y, z;
 
     static std::string notify_channel();
-    static query<std::string> by_id(const std::string& name);
+    static query by_id(const std::string& name);
 
-    static query<std::string> by_name(const std::string& name);
-    static query<std::string, float, float, float> upsert(const location& l);
+    static query by_name(const std::string& name);
+    static query upsert(const location& l);
   };
 }

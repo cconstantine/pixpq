@@ -11,10 +11,11 @@ namespace pixpq {
   template<typename T>
   class listener {
   public:
-    virtual void update(const std::string& name,const T& t) = 0;
+    virtual void update(const T& t) = 0;
   };
 
   template<typename T> class notifier;
+  using query = std::function<pqxx::result(pqxx::connection&)>;
 
   class manager {
   public:
@@ -27,31 +28,16 @@ namespace pixpq {
       notifiers[T::notify_channel()] = std::make_shared<notifier<T>>(T::notify_channel(), this, l);
     }
 
-    template<typename T, typename Q>
-    T get(const Q& q) {
-      std::cout << "get" << std::endl;
-      pqxx::work w(connection);
-      pqxx::result result = q(
-          [&](const std::string& q, auto... params) -> pqxx::result {
-            return w.exec_params_n(1, q, params...);
-          }
-        );
-      T obj(result.front());
-
-      w.commit();
-
+    template<typename T>
+    T get(query f) {
+      T obj(f(connection).front());
       return obj;
     }
 
-    template<typename T, typename Q>
-    std::vector<T> get_all(const Q& q) {
-      pqxx::work w(connection);
-      
-      pqxx::result result = q(
-        [&](const std::string& q, auto... params) -> pqxx::result {
-          return w.exec_params(q, params...);
-        }
-      );
+    template<typename T>
+    std::vector<T> get_all(std::function<pqxx::result(pqxx::connection&)> f) {
+     
+      pqxx::result result = f(connection);
       std::vector<T> records;
       records.reserve(result.size());
 
@@ -59,7 +45,6 @@ namespace pixpq {
         records.push_back(T(r));
       }
 
-      w.commit();
       return records;
     }
 
@@ -69,17 +54,13 @@ namespace pixpq {
 
   private:
     pqxx::connection connection;
-    pqxx::connection notifier_connection;
 
-    std::mutex connection_mutex;
     std::map<std::string, std::shared_ptr<pqxx::notification_receiver>> notifiers;
   };
 
   template<typename... T>
   using querier = typename std::function<pqxx::result(const std::string& , const T&...)>;
 
-  template<typename... T>
-  using query = typename std::function<pqxx::result(querier<T...> )>;
 
   template<typename T>
   class notifier : public pqxx::notification_receiver {
@@ -89,7 +70,7 @@ namespace pixpq {
      mgr(mgr), l(l) {  }
 
     void operator() (const std::string& payload, int backend_pid){
-      l->update(payload, mgr->get<T>(T::by_id(payload)));
+      l->update(mgr->get<T>(T::by_id(payload)));
     }
 
   private:

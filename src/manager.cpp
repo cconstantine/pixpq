@@ -6,16 +6,16 @@
 #include <pixpq/manager.hpp>
 
 namespace pixpq {
-  manager::manager(const std::string& opts) : connection(opts), notifier_connection(opts) {
+  manager::manager(const std::string& opts) : connection(opts) {
     connection.set_variable("synchronous_commit", "off");
   }
 
   pqxx::connection& manager::get_notifier_connection() {
-    return notifier_connection;
+    return connection;
   }
 
   void manager::process_updates() {
-    notifier_connection.get_notifs();
+    connection.get_notifs();
   }
 
   void manager::ensure_schema() {
