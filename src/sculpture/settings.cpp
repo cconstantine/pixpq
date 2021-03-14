@@ -34,8 +34,7 @@ namespace pixpq {
         pqxx::result r = w.exec_params_n(1,
           "INSERT into sculpture_settings (name, active_pattern, brightness, gamma) \
            VALUES ($1, $2, $3, $4) \
-           ON CONFLICT (name) DO NOTHING \
-           SET active_pattern = EXCLUDED.active_pattern, brightness = EXCLUDED.brightness, gamma = EXCLUDED.gamma \
+           ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name \
            RETURNING name, active_pattern, brightness, gamma",
            name, active_pattern, brightness, gamma);
         w.commit();
