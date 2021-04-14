@@ -32,6 +32,15 @@ CREATE TABLE IF NOT EXISTS tracking_locations
  );
  )SQL");
 
+      w.exec(R"SQL(
+ALTER TABLE tracking_locations
+ADD COLUMN IF NOT EXISTS tracked_at timestamp;
+)SQL");
+      w.exec(R"SQL(
+ALTER TABLE tracking_locations
+ADD COLUMN IF NOT EXISTS updated_at timestamp not null default now();
+)SQL");
+
     w.exec(R"SQL(
 CREATE OR REPLACE FUNCTION tracking_location_notifier ()
  returns trigger
