@@ -5,14 +5,14 @@ class test_settings_listener
   public pixpq::listener<pixpq::sculpture::pattern>,
   public pixpq::listener<pixpq::tracking::location> {
 public:
-  virtual void update(const std::string& name, const pixpq::sculpture::settings& s) {
-    printf("update settings: %s (%s) %f, %f\n", name.c_str(), s.active_pattern.c_str(), s.brightness, s.gamma);
+  virtual void update( const pixpq::sculpture::settings& s) {
+    printf("update settings: %s (%s) %f, %f\n", s.name.c_str(), s.active_pattern.c_str(), s.brightness, s.gamma);
   }
-  virtual void update(const std::string& name, const pixpq::sculpture::pattern& p) {
-    printf("update pattern: %s (%d):\n'%s'\n", name.c_str(), p.enabled, p.glsl_code.c_str());
+  virtual void update(const pixpq::sculpture::pattern& p) {
+    printf("update pattern: %s (%d):\n'%s'\n", p.name.c_str(), p.enabled, p.glsl_code.c_str());
   }
-  virtual void update(const std::string& name, const pixpq::tracking::location& loc) {
-    printf("update location: %s at %f, %f, %f\n", name.c_str(), loc.x, loc.y, loc.z);
+  virtual void update(const pixpq::tracking::location& loc) {
+    printf("update location: %s at %f, %f, %f\n", loc.name.c_str(), loc.x, loc.y, loc.z);
   }
 };
 
@@ -52,7 +52,7 @@ main(int argc, char **argv)
       manager.get<pixpq::tracking::location>(pixpq::tracking::location::upsert(l));
       // manager.get<pixpq::sculpture::settings>("foo", pixpq::sculpture::settings("asldkfj", 2.0 + i, 3.0 + i));
 
-      pixpq::sculpture::pattern p("foo.glsl", std::string("aldksfj: " + std::to_string(i)), i % 2 == 0);
+      pixpq::sculpture::pattern p("foo.glsl", std::string("aldksfj: " + std::to_string(i)), i % 2 == 0, i % 3 == 0);
       manager.get<pixpq::sculpture::pattern>(pixpq::sculpture::pattern::upsert(p));
 
       std::this_thread::sleep_for(std::chrono::duration<float>(1.0 / 60.0));

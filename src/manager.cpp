@@ -109,6 +109,11 @@ CREATE TABLE IF NOT EXISTS patterns
  );
  )SQL");
 
+      w.exec(R"SQL(
+ALTER TABLE patterns
+ADD COLUMN IF NOT EXISTS overscan boolean not null default true;
+)SQL");
+
     w.exec(R"SQL(
 CREATE OR REPLACE FUNCTION patterns_notifier ()
  returns trigger
