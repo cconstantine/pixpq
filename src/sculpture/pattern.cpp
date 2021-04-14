@@ -44,9 +44,9 @@ namespace pixpq {
 
         pqxx::result r = w.exec_params_n(1,
           "INSERT INTO patterns (name, glsl_code, enabled, overscan) \
-           VALUES ($1, $2, $3) \
+           VALUES ($1, $2, $3, $4) \
            ON CONFLICT (name) DO UPDATE SET glsl_code = EXCLUDED.glsl_code, enabled = EXCLUDED.enabled, overscan = EXCLUDED.overscan \
-           RETURNING name, glsl_code, enabled",
+           RETURNING name, glsl_code, enabled, overscan",
            p.name, p.glsl_code, p.enabled, p.overscan);
         w.commit();
         return r;
